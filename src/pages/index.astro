@@ -261,20 +261,21 @@ const latest = postList[0];
         </div>
       </header>
 
-      <!-- 全13コーナー完全対応ナビゲーション -->
+      <!-- 全14コーナー完全対応ナビゲーション -->
       <nav class="editorial-nav">
-        <a href="#minimal" class="nav-tag">01 調律と減算法</a>
+        <a href="#minimal" class="nav-tag">01 調律・安心感</a>
         <a href="#laugh" class="nav-tag highlight">🎭 02 芸人ネタ3選</a>
         <a href="#comedy-history" class="nav-tag highlight">🎙 03 平成お笑い史</a>
         <a href="#baby" class="nav-tag">👶 04 赤ちゃん3選</a>
-        <a href="#baby-travel" class="nav-tag highlight">🚗 05 赤ちゃん旅行</a>
-        <a href="#uniqlo" class="nav-tag">👗 06 ユニクロ特集</a>
-        <a href="#sauna-spa" class="nav-tag highlight">🧖 07 サウナ＆スパ</a>
-        <a href="#chill-hiphop" class="nav-tag">🎵 08 チル音楽</a>
-        <a href="#stream" class="nav-tag">📺 09 おすすめ配信</a>
-        <a href="#otaka" class="nav-tag">🌿 10 おおたかの森</a>
-        <a href="#book" class="nav-tag">📖 11 本とことば</a>
-        <a href="#refresh" class="nav-tag">☕ 12 ティータイム</a>
+        <a href="#baby-travel" class="nav-tag">🚗 05 赤ちゃん旅行</a>
+        <a href="#cafe" class="nav-tag highlight">☕ 06 カフェ巡り</a>
+        <a href="#uniqlo" class="nav-tag">👗 07 ユニクロ特集</a>
+        <a href="#sauna-spa" class="nav-tag">🧖 08 サウナ＆スパ</a>
+        <a href="#chill-hiphop" class="nav-tag">🎵 09 チル音楽</a>
+        <a href="#stream" class="nav-tag">📺 10 おすすめ配信</a>
+        <a href="#otaka" class="nav-tag">🌿 11 おおたかの森</a>
+        <a href="#book" class="nav-tag">📖 12 本とことば</a>
+        <a href="#refresh" class="nav-tag">🍵 13 ティータイム</a>
       </nav>
 
       <div class="radio-bar">
@@ -378,7 +379,7 @@ const latest = postList[0];
 
         const rawText = content.innerText
           .replace(/https?:\/\/\S+/g, "")
-          .replace(/[#*`_■§➔▲★🌿📻👶📖🎭👗☕🎙🧖🚗📺🎵]/g, "")
+          .replace(/[#*`_■§➔▲★🌿📻👶📖🎭👗☕🎙🧖🚗📺🎵🍵]/g, "")
           .trim();
 
         chunks = splitTextIntoChunks(rawText, 90);
