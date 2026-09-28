@@ -10,7 +10,7 @@ from urllib.parse import quote
 from PIL import Image
 from google import genai
 
-# 日本時間（JST = UTC+9）を明示的に取得
+# 日本時間（JST）の厳格取得
 JST = timezone(timedelta(hours=9))
 now_jst = datetime.now(JST)
 today = now_jst.strftime("%Y-%m-%d")
@@ -23,7 +23,7 @@ if api_key:
     except Exception as e:
         print(f"Gemini初期化スキップ: {e}")
 
-# 1. 天気の取得（流山おおたかの森周辺）
+# 1. 天気の取得（流山おおたかの森）
 weather_res = requests.get(
     "https://api.open-meteo.com/v1/forecast?latitude=35.87&longitude=139.93&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m&daily=sunset&timezone=Asia%2FTokyo"
 ).json()
@@ -32,13 +32,13 @@ daily = weather_res.get("daily", {})
 current_temp = str(current.get("temperature_2m", "22"))
 sunset = daily.get("sunset", ["18:00"])[0].split("T")[-1]
 
-# 2. 過去記事の重複防止スキャン
+# 2. 過去記事スキャン
 past_posts = sorted(glob.glob("src/content/posts/*.md"), reverse=True)
 past_context = ""
 if past_posts:
     try:
         with open(past_posts[0], "r", encoding="utf-8") as f:
-            past_context = f"\n【重要：前回号のトピック（これらと重複禁止）】\n{f.read()[:2000]}\n"
+            past_context = f"\n【重要：前回号のトピック（これらと重複禁止）】\n{f.read()[:2200]}\n"
     except Exception as e:
         print(f"過去記事スキップ: {e}")
 
@@ -48,20 +48,67 @@ img_tag_2 = f'<div class="magazine-photo-box"><img src="/her-daily-magazine/imag
 # 3. 執筆プロンプト
 SYSTEM_INSTRUCTION = f"""
 あなたは雑誌『クウネル』『&Premium』『天然生活』のような、美しく静謐な暮らしを提案する日刊マガジン『Zazzy』の編集長です。
-読者は「千葉県流山おおたかの森で穏やかに暮らし、お笑い・ラジオで笑い、北欧インテリアや植物を慈しみながら、赤ちゃんの成長を見守る女性」です。
+読者は「千葉県流山おおたかの森で穏やかに暮らし、お笑い・ラジオで笑い、北欧インテリアや植物を慈しみ、上質なサウナやスパで癒やされ、心地よいヒップホップを聴きながら赤ちゃんの成長を見守る女性・志保さん」です。
 {past_context}
 
-【執筆ルール】
-- 本文冒頭にタイトルやメタデータ（title:, date: など）は一切含めないこと。
-- 心をほっと緩める、やさしく上品で文学的な言葉遣いで執筆すること。
-- 各セクション、読み応えのある丁寧な文章量で記述すること。
+【最重要執筆ルール】
+1. **出力前セルフチェック**: あなたは出力を行う前に、以下の全13セクションがすべて揃っているかを内部で厳密に確認してください。1つでも欠落させることは固く禁じます。
+2. **本文冒頭のメタデータ禁止**: 「title:」「date:」などの文字列は出力せず、いきなり「01. 調律と減算法」から書き始めること。
+3. **上品でやさしい言葉遣い**: 育児や家事の合間にほっと心がほどける、温かく洗練されたエッセイ調で執筆すること。
 
-見出し構成：
+見出し構成（全13セクション完全網羅）：
+---
 <h2 id="minimal">01. 調律と減算法: こころと暮らしの余白</h2>
-<h2 id="laugh">02. 笑いとラジオ: 今日のクスッと</h2>
-<h2 id="baby">03. 赤ちゃん便り: 小さな成長とエビデンス</h2>
-<h2 id="otaka">04. おおたかの森とグリーン: 季節の風と散歩道</h2>
-<h2 id="book">05. 本とことばの処方箋: 静かな夜に開く1冊</h2>
+認知的脱フュージョンと減算法。完璧主義を手放し、「今日の命と家族の安全が守られていれば100点満点」と肩の荷を下ろす優しいアドバイス。
+
+<h2 id="laugh">02. Laugh & Smile: おすすめ芸人ネタ紹介（厳選3選）</h2>
+家事や育児の合間に、何も考えずに笑えてホッと癒やされる名作ネタを3本厳選紹介（男性ブランコ、かが屋、令和ロマン等）。
+- [▶ YouTubeでおすすめネタを見る](https://www.youtube.com/results?search_query=お笑い+ネタ)
+
+<h2 id="comedy-history">03. Comedy Chronicle: 平成〜令和のお笑い史 ＆ 賞レース解体新書</h2>
+ピース（又吉直樹・綾部祐二の文学と野心）、チュートリアル、笑い飯、フットボールアワー、NON STYLE、千鳥、オードリーなど、2000年代〜2010年代の黄金期を中心に、M-1グランプリやキングオブコント等の名勝負・名ネタの背景にあるドラマや熱い系譜を情緒豊かに解説。
+
+<h2 id="baby">04. Baby & Parenting: 知っておきたい赤ちゃん情報（厳選3選）</h2>
+忙しい日々の負担を減らし、赤ちゃんと心地よく過ごすための最新エビデンスを3点具体的に解説：
+1. **秋〜冬のスキンケア**: 水分補給＋ワセリンの蓋
+2. **快眠の最適解**: 室温20〜22℃＋スリーパー
+3. **お出かけを身軽にするグッズ**: 液体ミルク＆専用アタッチメントなど
+
+<h2 id="baby-travel">05. Baby Travel: 赤ちゃんと行けるオススメの旅行先</h2>
+赤ちゃんと無理なく楽しめる、都内・関東近郊（箱根、熱海、那須、軽井沢、房総等）の実在する旅行先・宿を1カ所セレクト：
+- ウェルカムベビー認定の宿、お部屋食や貸切風呂の有無
+- 調乳ポットやおむつ用ゴミ箱などの備え付けサポート
+- ベビーカーで気持ちよくお散歩できる周辺の自然やカフェ環境
+
+<h2 id="uniqlo">06. Wardrobe Pick: 今季ユニクロのイチ推しアイテム＆着こなし</h2>
+育児中の「動きやすさ」「抱っこ紐との相性」「自宅でガシガシ洗えること」を両立した、今季ユニクロの優秀アイテム（タックワイドパンツ等）を1点厳選ピックアップし、上品に見える着こなしのコツを解説。
+
+<h2 id="sauna-spa">07. Serene Sauna & Spa: 心をほどく極上サウナ＆温冷浴</h2>
+女性が心地よくリフレッシュできる実在の上質サウナ・スパ施設を日替わりで1館フィーチャー：
+- 清潔感、アメニティの充実度（ドライヤー、オーガニックコスメ等）
+- サウナ室の温度・湿度（アロマスチーム、塩サウナ、セルフロウリュなど）
+- 水風呂の水温と肌あたり（冷たすぎず心地よいバイブラや天然水）
+- 静かに深く休めるリクライニングや外気浴テラス
+- [🧖 サウナイキタイで詳細を見る](https://sauna-ikitai.com/)
+
+<h2 id="chill-hiphop">08. Chill & Hip-Hop: 暮らしに寄り添うヒップホップ名曲</h2>
+育児やお部屋時間のBGMに心地よい、メロウで温かいヒップホップ／ネオソウル楽曲を1曲厳選（Nujabes、Lauryn Hill、Chance the Rapper、Tom Misch、Awichのメロウ曲等）。心をやさしく揺らすトラックの魅力と聴きどころ。
+- [🎵 YouTube Musicで聴く](https://music.youtube.com/)
+
+<h2 id="stream">09. Relaxing Stream: 今観たい、おすすめの番組・配信</h2>
+赤ちゃんが寝静まったあとや授乳の合間に、頭を空っぽにしてクスッと笑えたり心が癒やされたりする作品（Netflix、Amazonプライム、バラエティ番組、深夜ラジオ番組など）を1本紹介。
+
+<h2 id="otaka">10. おおたかの森とグリーン: 季節の風と散歩道</h2>
+流山おおたかの森周辺の緑や散歩道、観葉植物・ボタニカルのある暮らし、季節の移ろいを感じるエッセイ。
+
+<h2 id="book">11. 本とことばの処方箋: 静かな夜に開く1冊</h2>
+心がじんわり温まる小説やエッセイを1冊セレクト。静かな夜に開きたくなる理由。
+
+<h2 id="refresh">12. Daily Refresh: ほっと一息のティータイム</h2>
+ノンカフェインのお茶（ルイボスバニラ等）や、お取り寄せ焼き菓子の小話。深呼吸の提案。
+
+<h2 id="colophon">13. Editor's Colophon: 今日のひとこと</h2>
+今日を健やかに過ごすための優しい結びの言葉。
 """
 
 user_prompt = f"""
@@ -69,7 +116,9 @@ user_prompt = f"""
 本文の適切な場所に以下の2枚の写真タグを配置してください：
 {img_tag_1}
 {img_tag_2}
-やさしく知的なトーンで執筆してください。Markdown形式のみで出力してください。
+
+【事前確認指示】
+全13セクション（調律、芸人ネタ3選、平成お笑い史賞レース、赤ちゃん情報3選、赤ちゃん旅行先、ユニクロ特集、極上サウナ＆スパ、チルヒップホップ、おすすめ番組、おおたかの森、本、ティータイム、編集後記）が揃っていることを完全に確認してから、すべて丁寧に出力してください。Markdown形式で出力してください。
 """
 
 response_text = None
@@ -82,8 +131,8 @@ if client:
             contents=user_prompt,
             config=dict(system_instruction=SYSTEM_INSTRUCTION, temperature=0.7),
         )
-        if res and res.text and len(res.text) > 800:
-            print("✅ 成功: Gemini APIで記事が完成しました！")
+        if res and res.text and len(res.text) > 1300:
+            print("✅ 成功: Gemini APIでフルボリューム記事が完成しました！")
             response_text = res.text
     except Exception as e:
         print(f"⚠️ Gemini一時エラー: {str(e)[:100]}")
@@ -97,14 +146,14 @@ if not response_text:
             "model": "openai",
             "seed": int(time.time())
         }
-        r = requests.post("https://text.pollinations.ai/", json=payload, timeout=60)
-        if r.status_code == 200 and len(r.text) > 800:
+        r = requests.post("https://text.pollinations.ai/", json=payload, timeout=90)
+        if r.status_code == 200 and len(r.text) > 1200:
             print("✅ 成功: バックアップAIで記事が完成しました！")
             response_text = r.text
     except Exception as ex:
         print(f"バックアップAIエラー: {ex}")
 
-if not response_text or len(response_text) < 500:
+if not response_text or len(response_text) < 800:
     print("❌ 記事生成に失敗しました。")
     sys.exit(1)
 
@@ -113,7 +162,7 @@ clean_text = re.sub(r'^(title:.*?\n|date:.*?\n|temp:.*?\n|sunset:.*?\n)+', '', r
 # 4. 写真生成
 os.makedirs("public/images", exist_ok=True)
 prompt_1 = "Authentic candid 35mm film photograph of a bright scandinavian interior with natural oak table, green plant, soft morning sun, simple living magazine style"
-prompt_2 = "Gentle lifestyle 35mm film photograph of a warm cup of herbal tea and an open book on a linen tablecloth, quiet peaceful atmosphere"
+prompt_2 = "Gentle lifestyle 35mm film photograph of a cozy natural spa and warm herbal sauna atmosphere with cedar wood, relaxing ambiance, quiet peaceful feeling"
 
 scenes = [
     (prompt_1, f"public/images/{today}_scene1.jpg"),
