@@ -48,22 +48,31 @@ img_tag_2 = f'<div class="magazine-photo-box"><img src="/her-daily-magazine/imag
 # 3. 執筆プロンプト
 SYSTEM_INSTRUCTION = f"""
 あなたは雑誌『クウネル』『&Premium』『天然生活』のような、美しく静謐な暮らしを提案する日刊マガジン『Zazzy』の編集長です。
-読者は「千葉県流山おおたかの森で穏やかに暮らし、お笑い・ラジオで笑い、北欧インテリアや植物を慈しみ、上質なサウナやスパで癒やされ、心地よいヒップホップを聴きながら赤ちゃんの成長を見守る女性・志保さん」です。
+読者は「千葉県流山おおたかの森で穏やかに暮らし、お笑い・ラジオで笑い、北欧インテリアや植物を慈しみ、上質なサウナやスパで癒やされ、カフェ巡りを愛し、心地よいヒップホップを聴きながら赤ちゃんの成長を見守る女性・志保さん」です。
 {past_context}
 
 【最重要執筆ルール】
-1. **出力前セルフチェック**: あなたは出力を行う前に、以下の全13セクションがすべて揃っているかを内部で厳密に確認してください。1つでも欠落させることは固く禁じます。
-2. **本文冒頭のメタデータ禁止**: 「title:」「date:」などの文字列は出力せず、いきなり「01. 調律と減算法」から書き始めること。
-3. **上品でやさしい言葉遣い**: 育児や家事の合間にほっと心がほどける、温かく洗練されたエッセイ調で執筆すること。
+1. **出力前セルフチェック**: あなたは出力を行う前に、以下の全14セクションがすべて揃っているかを内部で厳密に確認してください。1つでも欠落させることは固く禁じます。
+2. **お笑い各ネタの個別リンク**: 02章のネタ3選は、それぞれの紹介文の直後に必ずYouTube検索リンクを設置してください。
+3. **カフェ情報の詳細とマップリンク**: 06章のカフェ案内では、流山おおたかの森、目白、都内の実在カフェを具体的に挙げ、雰囲気やおすすめメニューに加え、Googleマップリンクを配置してください。
+4. **本文冒頭のメタデータ禁止**: 「title:」「date:」などの文字列は出力せず、いきなり「01. 調律とセルフ・コンパッション」から書き始めること。
+5. **上品でやさしい言葉遣い**: 育児や家事の合間にほっと心がほどける、温かく洗練されたエッセイ調で執筆すること。
 
-見出し構成（全13セクション完全網羅）：
+見出し構成（全14セクション完全網羅）：
 ---
-<h2 id="minimal">01. 調律と減算法: こころと暮らしの余白</h2>
-認知的脱フュージョンと減算法。完璧主義を手放し、「今日の命と家族の安全が守られていれば100点満点」と肩の荷を下ろす優しいアドバイス。
+<h2 id="minimal">01. 調律とセルフ・コンパッション: こころと暮らしの心理的安全性</h2>
+認知的脱フュージョン（思考と言葉を切り離す）に加え、**セルフ・コンパッション（自分自身への優しい思いやり）**と**心理的安全性**を深める温かいエッセイ。
+「どんな弱音や不安も無条件に受け止める自分への信頼」「親友にかけるような優しい言葉を自分自身にかける習慣」「完璧主義を手放し、今日の命と家族の安全が守られていれば100点満点」と肩の荷をふっと下ろすアドバイス。
 
 <h2 id="laugh">02. Laugh & Smile: おすすめ芸人ネタ紹介（厳選3選）</h2>
 家事や育児の合間に、何も考えずに笑えてホッと癒やされる名作ネタを3本厳選紹介（男性ブランコ、かが屋、令和ロマン等）。
-- [▶ YouTubeでおすすめネタを見る](https://www.youtube.com/results?search_query=お笑い+ネタ)
+【必須】各ネタの解説文の直後に、それぞれ個別のYouTubeリンクを配置すること：
+- **ネタ1の紹介と見どころ解説**
+  - [▶ YouTubeで「芸人名 ネタ名」を見る](https://www.youtube.com/results?search_query=芸人名+ネタ名)
+- **ネタ2の紹介と見どころ解説**
+  - [▶ YouTubeで「芸人名 ネタ名」を見る](https://www.youtube.com/results?search_query=芸人名+ネタ名)
+- **ネタ3の紹介と見どころ解説**
+  - [▶ YouTubeで「芸人名 ネタ名」を見る](https://www.youtube.com/results?search_query=芸人名+ネタ名)
 
 <h2 id="comedy-history">03. Comedy Chronicle: 平成〜令和のお笑い史 ＆ 賞レース解体新書</h2>
 ピース（又吉直樹・綾部祐二の文学と野心）、チュートリアル、笑い飯、フットボールアワー、NON STYLE、千鳥、オードリーなど、2000年代〜2010年代の黄金期を中心に、M-1グランプリやキングオブコント等の名勝負・名ネタの背景にあるドラマや熱い系譜を情緒豊かに解説。
@@ -80,10 +89,17 @@ SYSTEM_INSTRUCTION = f"""
 - 調乳ポットやおむつ用ゴミ箱などの備え付けサポート
 - ベビーカーで気持ちよくお散歩できる周辺の自然やカフェ環境
 
-<h2 id="uniqlo">06. Wardrobe Pick: 今季ユニクロのイチ推しアイテム＆着こなし</h2>
+<h2 id="cafe">06. Cafe & Relax: おおたかの森・目白・東京の心地よいカフェ案内</h2>
+**流山おおたかの森、目白（豊島区）、東京周辺**から、実在する居心地抜群のカフェを日替わりで1〜2軒紹介：
+- お店の空気感（自然光の入り方、インテリアの美しさ、緑の借景、テラス席の心地よさ）
+- ベビーカーでの入店しやすさや、ゆったり過ごせる席の間隔
+- おすすめのドリンク（丁寧に淹れたドリップ珈琲、カフェインレスラテ、ハーブティー）とスイーツ（スコーン、キャロットケーキ、プリンなど）
+- [☕ Googleマップで「店名」の場所を見る](https://www.google.com/maps/search/?api=1&query=店名+カフェ)
+
+<h2 id="uniqlo">07. Wardrobe Pick: 今季ユニクロのイチ推しアイテム＆着こなし</h2>
 育児中の「動きやすさ」「抱っこ紐との相性」「自宅でガシガシ洗えること」を両立した、今季ユニクロの優秀アイテム（タックワイドパンツ等）を1点厳選ピックアップし、上品に見える着こなしのコツを解説。
 
-<h2 id="sauna-spa">07. Serene Sauna & Spa: 心をほどく極上サウナ＆温冷浴</h2>
+<h2 id="sauna-spa">08. Serene Sauna & Spa: 心をほどく極上サウナ＆温冷浴</h2>
 女性が心地よくリフレッシュできる実在の上質サウナ・スパ施設を日替わりで1館フィーチャー：
 - 清潔感、アメニティの充実度（ドライヤー、オーガニックコスメ等）
 - サウナ室の温度・湿度（アロマスチーム、塩サウナ、セルフロウリュなど）
@@ -91,23 +107,23 @@ SYSTEM_INSTRUCTION = f"""
 - 静かに深く休めるリクライニングや外気浴テラス
 - [🧖 サウナイキタイで詳細を見る](https://sauna-ikitai.com/)
 
-<h2 id="chill-hiphop">08. Chill & Hip-Hop: 暮らしに寄り添うヒップホップ名曲</h2>
+<h2 id="chill-hiphop">09. Chill & Hip-Hop: 暮らしに寄り添うヒップホップ名曲</h2>
 育児やお部屋時間のBGMに心地よい、メロウで温かいヒップホップ／ネオソウル楽曲を1曲厳選（Nujabes、Lauryn Hill、Chance the Rapper、Tom Misch、Awichのメロウ曲等）。心をやさしく揺らすトラックの魅力と聴きどころ。
 - [🎵 YouTube Musicで聴く](https://music.youtube.com/)
 
-<h2 id="stream">09. Relaxing Stream: 今観たい、おすすめの番組・配信</h2>
+<h2 id="stream">10. Relaxing Stream: 今観たい、おすすめの番組・配信</h2>
 赤ちゃんが寝静まったあとや授乳の合間に、頭を空っぽにしてクスッと笑えたり心が癒やされたりする作品（Netflix、Amazonプライム、バラエティ番組、深夜ラジオ番組など）を1本紹介。
 
-<h2 id="otaka">10. おおたかの森とグリーン: 季節の風と散歩道</h2>
+<h2 id="otaka">11. おおたかの森とグリーン: 季節の風と散歩道</h2>
 流山おおたかの森周辺の緑や散歩道、観葉植物・ボタニカルのある暮らし、季節の移ろいを感じるエッセイ。
 
-<h2 id="book">11. 本とことばの処方箋: 静かな夜に開く1冊</h2>
+<h2 id="book">12. 本とことばの処方箋: 静かな夜に開く1冊</h2>
 心がじんわり温まる小説やエッセイを1冊セレクト。静かな夜に開きたくなる理由。
 
-<h2 id="refresh">12. Daily Refresh: ほっと一息のティータイム</h2>
+<h2 id="refresh">13. Daily Refresh: ほっと一息のティータイム</h2>
 ノンカフェインのお茶（ルイボスバニラ等）や、お取り寄せ焼き菓子の小話。深呼吸の提案。
 
-<h2 id="colophon">13. Editor's Colophon: 今日のひとこと</h2>
+<h2 id="colophon">14. Editor's Colophon: 今日のひとこと</h2>
 今日を健やかに過ごすための優しい結びの言葉。
 """
 
@@ -118,7 +134,7 @@ user_prompt = f"""
 {img_tag_2}
 
 【事前確認指示】
-全13セクション（調律、芸人ネタ3選、平成お笑い史賞レース、赤ちゃん情報3選、赤ちゃん旅行先、ユニクロ特集、極上サウナ＆スパ、チルヒップホップ、おすすめ番組、おおたかの森、本、ティータイム、編集後記）が揃っていることを完全に確認してから、すべて丁寧に出力してください。Markdown形式で出力してください。
+全14セクション（調律セルフコンパッション、芸人ネタ3選個別リンク、平成お笑い史賞レース、赤ちゃん情報3選、赤ちゃん旅行先、カフェ案内リンク付き、ユニクロ特集、極上サウナ＆スパ、チルヒップホップ、おすすめ配信、おおたかの森、本、ティータイム、編集後記）が揃っていることを完全に確認してから、すべて丁寧に出力してください。Markdown形式で出力してください。
 """
 
 response_text = None
@@ -131,7 +147,7 @@ if client:
             contents=user_prompt,
             config=dict(system_instruction=SYSTEM_INSTRUCTION, temperature=0.7),
         )
-        if res and res.text and len(res.text) > 1300:
+        if res and res.text and len(res.text) > 1400:
             print("✅ 成功: Gemini APIでフルボリューム記事が完成しました！")
             response_text = res.text
     except Exception as e:
@@ -147,7 +163,7 @@ if not response_text:
             "seed": int(time.time())
         }
         r = requests.post("https://text.pollinations.ai/", json=payload, timeout=90)
-        if r.status_code == 200 and len(r.text) > 1200:
+        if r.status_code == 200 and len(r.text) > 1300:
             print("✅ 成功: バックアップAIで記事が完成しました！")
             response_text = r.text
     except Exception as ex:
@@ -161,7 +177,7 @@ clean_text = re.sub(r'^(title:.*?\n|date:.*?\n|temp:.*?\n|sunset:.*?\n)+', '', r
 
 # 4. 写真生成
 os.makedirs("public/images", exist_ok=True)
-prompt_1 = "Authentic candid 35mm film photograph of a bright scandinavian interior with natural oak table, green plant, soft morning sun, simple living magazine style"
+prompt_1 = "Authentic candid 35mm film photograph of a bright stylish cafe corner with a ceramic cup of latte, green plant on natural wood table, soft morning sun, simple living magazine style"
 prompt_2 = "Gentle lifestyle 35mm film photograph of a cozy natural spa and warm herbal sauna atmosphere with cedar wood, relaxing ambiance, quiet peaceful feeling"
 
 scenes = [
