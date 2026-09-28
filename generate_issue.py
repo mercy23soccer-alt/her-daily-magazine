@@ -4,6 +4,7 @@ import io
 import time
 import glob
 import re
+import random
 import requests
 from datetime import datetime, timezone, timedelta
 from urllib.parse import quote
@@ -42,8 +43,8 @@ if past_posts:
     except Exception as e:
         print(f"過去記事スキップ: {e}")
 
-img_tag_1 = f'<div class="magazine-photo-box"><img src="/her-daily-magazine/images/{today}_scene1.jpg" alt="Today\'s Scene 1" /><p class="photo-caption">QUIET MORNING IN NAGAREYAMA</p></div>'
-img_tag_2 = f'<div class="magazine-photo-box"><img src="/her-daily-magazine/images/{today}_scene2.jpg" alt="Today\'s Scene 2" /><p class="photo-caption">TEA, BOTANICAL & SIMPLE LIVING</p></div>'
+img_tag_1 = f'<div class="magazine-photo-box"><img src="/her-daily-magazine/images/{today}_scene1.jpg" alt="Today\'s Scene 1" /><p class="photo-caption">QUIET MORNING & CAFE IN NAGAREYAMA</p></div>'
+img_tag_2 = f'<div class="magazine-photo-box"><img src="/her-daily-magazine/images/{today}_scene2.jpg" alt="Today\'s Scene 2" /><p class="photo-caption">BOTANICAL, SPA & SIMPLE LIVING</p></div>'
 
 # 3. 執筆プロンプト
 SYSTEM_INSTRUCTION = f"""
@@ -61,17 +62,16 @@ SYSTEM_INSTRUCTION = f"""
 見出し構成（全14セクション完全網羅）：
 ---
 <h2 id="minimal">01. 調律とセルフ・コンパッション: こころと暮らしの心理的安全性</h2>
-認知的脱フュージョン（思考と言葉を切り離す）に加え、**セルフ・コンパッション（自分自身への優しい思いやり）**と**心理的安全性**を深める温かいエッセイ。
-「どんな弱音や不安も無条件に受け止める自分への信頼」「親友にかけるような優しい言葉を自分自身にかける習慣」「完璧主義を手放し、今日の命と家族の安全が守られていれば100点満点」と肩の荷をふっと下ろすアドバイス。
+認知的脱フュージョンに加え、セルフ・コンパッションと心理的安全性を深める温かいエッセイ。自分への無条件の味方意識と減算法。
 
 <h2 id="laugh">02. Laugh & Smile: おすすめ芸人ネタ紹介（厳選3選）</h2>
 家事や育児の合間に、何も考えずに笑えてホッと癒やされる名作ネタを3本厳選紹介（男性ブランコ、かが屋、令和ロマン等）。
-【必須】各ネタの解説文の直後に、それぞれ個別のYouTubeリンクを配置すること：
-- **ネタ1の紹介と見どころ解説**
+各ネタの解説文の直後に、それぞれ個別のYouTubeリンクを配置すること：
+- **ネタ1の紹介と解説**
   - [▶ YouTubeで「芸人名 ネタ名」を見る](https://www.youtube.com/results?search_query=芸人名+ネタ名)
-- **ネタ2の紹介と見どころ解説**
+- **ネタ2の紹介と解説**
   - [▶ YouTubeで「芸人名 ネタ名」を見る](https://www.youtube.com/results?search_query=芸人名+ネタ名)
-- **ネタ3の紹介と見どころ解説**
+- **ネタ3の紹介と解説**
   - [▶ YouTubeで「芸人名 ネタ名」を見る](https://www.youtube.com/results?search_query=芸人名+ネタ名)
 
 <h2 id="comedy-history">03. Comedy Chronicle: 平成〜令和のお笑い史 ＆ 賞レース解体新書</h2>
@@ -134,7 +134,7 @@ user_prompt = f"""
 {img_tag_2}
 
 【事前確認指示】
-全14セクション（調律セルフコンパッション、芸人ネタ3選個別リンク、平成お笑い史賞レース、赤ちゃん情報3選、赤ちゃん旅行先、カフェ案内リンク付き、ユニクロ特集、極上サウナ＆スパ、チルヒップホップ、おすすめ配信、おおたかの森、本、ティータイム、編集後記）が揃っていることを完全に確認してから、すべて丁寧に出力してください。Markdown形式で出力してください。
+全14セクションが揃っていることを完全に確認してから、すべて丁寧に出力してください。Markdown形式で出力してください。
 """
 
 response_text = None
@@ -175,10 +175,55 @@ if not response_text or len(response_text) < 800:
 
 clean_text = re.sub(r'^(title:.*?\n|date:.*?\n|temp:.*?\n|sunset:.*?\n)+', '', response_text.strip(), flags=re.MULTILINE | re.IGNORECASE).strip()
 
-# 4. 写真生成
+# 4. 【新設計】奥様マガジン用「日替わり動的プロンプト」生成
 os.makedirs("public/images", exist_ok=True)
-prompt_1 = "Authentic candid 35mm film photograph of a bright stylish cafe corner with a ceramic cup of latte, green plant on natural wood table, soft morning sun, simple living magazine style"
-prompt_2 = "Gentle lifestyle 35mm film photograph of a cozy natural spa and warm herbal sauna atmosphere with cedar wood, relaxing ambiance, quiet peaceful feeling"
+
+cafe_scenes = [
+    "A bright quiet corner table in a stylish Tokyo cafe with a slice of carrot cake on vintage ceramic plate, soft natural morning sunlight, 35mm film photography, Kinfolk aesthetic",
+    "A cozy wooden table in a cafe with a warm matcha latte art cup and open notebook, green garden view through glass window, gentle analog photography",
+    "Spacious scandinavian cafe interior with high ceiling, exposed concrete and natural oak furniture, lush potted plants, serene morning atmosphere",
+    "Close-up of a fresh baked scone with clotted cream and strawberry jam on linen napkin beside a glass teapot, warm documentary style",
+    "A sunny outdoor terrace cafe table shaded by green trees, delicate porcelain coffee cup, peaceful European-style street view, soft film grain"
+]
+
+life_spa_scenes = [
+    "A tranquil herbal steam sauna room with aromatic herbs hanging from cedar walls, gentle diffuse mist, serene spa photography, Kinfolk style",
+    "A natural stone outdoor hot spring bath surrounded by Autumn foliage, soft steam rising in crisp morning air, relaxing luxury ryokan aesthetic",
+    "A calm living room nursery nook with soft cream linen blanket, natural rattan baby basket, warm diffuse morning sun, gentle parenting lifestyle",
+    "Glass vase with blooming eucalyptus and white flowers on a light wood sideboard, soft morning shadows, minimal interior styling",
+    "A cozy reading chair beside a bookshelf, warm woven throw blanket, cup of steaming chamomile tea on side table, evening golden hour glow"
+]
+
+day_seed = now_jst.timetuple().tm_yday
+prompt_1 = cafe_scenes[day_seed % len(cafe_scenes)]
+prompt_2 = life_spa_scenes[(day_seed + 2) % len(life_spa_scenes)]
+
+if client:
+    try:
+        photo_gen_prompt = f"""
+以下の記事本文を読み、この号にふさわしい、雑誌『&Premium』『クウネル』風の美しく優しい35mmフィルム写真のプロンプト（英語・1文・高品質指示）を2つ考案してください。
+1つ目は本日紹介されたカフェや美味しいスイーツ・珈琲、2つ目は上質なサウナ・スパ、植物、赤ちゃんとの穏やかな暮らしのシーンにしてください。
+出力形式：
+PROMPT1: <英語プロンプト>
+PROMPT2: <英語プロンプト>
+
+記事抜粋：
+{clean_text[:1200]}
+"""
+        p_res = client.models.generate_content(
+            model="gemini-3.8-flash",
+            contents=photo_gen_prompt,
+        )
+        if p_res and p_res.text:
+            m1 = re.search(r'PROMPT1:\s*(.+)', p_res.text)
+            m2 = re.search(r'PROMPT2:\s*(.+)', p_res.text)
+            if m1:
+                prompt_1 = m1.group(1).strip() + ", authentic 35mm film photography, soft natural lighting, &Premium magazine style"
+            if m2:
+                prompt_2 = m2.group(1).strip() + ", authentic 35mm film photography, gentle warm atmosphere, quiet simple living"
+            print("✅ 記事連動型オリジナル画像プロンプトの生成に成功！")
+    except Exception as e:
+        print(f"動的プロンプト生成スキップ（日替わりプールを使用）: {e}")
 
 scenes = [
     (prompt_1, f"public/images/{today}_scene1.jpg"),
@@ -202,7 +247,7 @@ def generate_and_save_photo(prompt_text, file_path):
 
     try:
         clean_prompt = quote(prompt_text)
-        url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=1200&height=675&nologo=true&seed={int(time.time())}"
+        url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=1200&height=675&nologo=true&seed={int(time.time()) + random.randint(1, 99999)}"
         r = requests.get(url, timeout=30)
         if r.status_code == 200:
             with open(file_path, "wb") as f:
