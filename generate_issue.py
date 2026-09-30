@@ -33,95 +33,116 @@ daily = weather_res.get("daily", {})
 current_temp = str(current.get("temperature_2m", "22"))
 sunset = daily.get("sunset", ["18:00"])[0].split("T")[-1]
 
-# 2. 過去記事スキャン
-past_posts = sorted(glob.glob("src/content/posts/*.md"), reverse=True)
-past_context = ""
-if past_posts:
-    try:
-        with open(past_posts[0], "r", encoding="utf-8") as f:
-            past_context = f"\n【重要：前回号のトピック（これらと重複禁止）】\n{f.read()[:2200]}\n"
-    except Exception as e:
-        print(f"過去記事スキップ: {e}")
+# 2. 【過去90日分】全記事から重複禁止トピックを自動抽出
+past_posts = sorted(glob.glob("src/content/posts/*.md"), reverse=True)[:90]
+past_used_topics = []
 
-img_tag_1 = f'<div class="magazine-photo-box"><img src="/her-daily-magazine/images/{today}_scene1.jpg" alt="Today\'s Scene 1" /><p class="photo-caption">QUIET MORNING & CAFE IN NAGAREYAMA</p></div>'
+for p in past_posts:
+    try:
+        with open(p, "r", encoding="utf-8") as f:
+            c = f.read()
+            date_label = os.path.basename(p).replace(".md", "")
+            items = []
+            for line in c.splitlines():
+                line_str = line.strip()
+                if line_str.startswith("#") or line_str.startswith("<h2") or line_str.startswith("<h3"):
+                    clean_h = re.sub(r'<[^>]+>|[#*]', '', line_str).strip()
+                    if clean_h and not any(k in clean_h for k in [
+                        "調律", "Laugh & Smile", "Comedy Chronicle", "Baby & Parenting",
+                        "Baby Travel", "Cafe & Relax", "Wardrobe Pick", "Serene Sauna",
+                        "Chill & Hip-Hop", "Relaxing Stream", "おおたかの森とグリーン", "本とことば",
+                        "Daily Refresh", "Editor's Colophon"
+                    ]):
+                        items.append(clean_h)
+                elif any(k in line_str for k in ["ネタ", "芸人", "カフェ", "店", "サウナ", "宿", "温泉", "本", "曲", "番組"]):
+                    bolds = re.findall(r'\*\*(.*?)\*\*', line_str)
+                    if bolds:
+                        items.extend(bolds[:2])
+                    else:
+                        clean_l = re.sub(r'<[^>]+>|\[.*?\]\(.*?\)|\*', '', line_str).strip()
+                        if 3 < len(clean_l) < 45:
+                            items.append(clean_l)
+
+            seen = set()
+            unique_items = [x for x in items if not (x in seen or seen.add(x))]
+            if unique_items:
+                past_used_topics.append(f"【{date_label}号】: " + " / ".join(unique_items[:8]))
+    except Exception as e:
+        pass
+
+past_context = "\n".join(past_used_topics) if past_used_topics else "（過去90日間の記録なし）"
+
+img_tag_1 = f'<div class="magazine-photo-box"><img src="/her-daily-magazine/images/{today}_scene1.jpg" alt="Today\'s Scene 1" /><p class="photo-caption">QUIET MORNING & CAFE SCENE</p></div>'
 img_tag_2 = f'<div class="magazine-photo-box"><img src="/her-daily-magazine/images/{today}_scene2.jpg" alt="Today\'s Scene 2" /><p class="photo-caption">BOTANICAL, SPA & SIMPLE LIVING</p></div>'
 
 # 3. 執筆プロンプト
 SYSTEM_INSTRUCTION = f"""
 あなたは雑誌『クウネル』『&Premium』『天然生活』のような、美しく静謐な暮らしを提案する日刊マガジン『Zazzy』の編集長です。
 読者は「千葉県流山おおたかの森で穏やかに暮らし、お笑い・ラジオで笑い、北欧インテリアや植物を慈しみ、上質なサウナやスパで癒やされ、カフェ巡りを愛し、心地よいヒップホップを聴きながら赤ちゃんの成長を見守る女性・志保さん」です。
+
+【最重要：過去90日間に取り上げたトピック・固有名詞一覧】
+以下の過去90日間に登場した「芸人、ネタ、カフェ店名、育児情報、旅行先・宿、サウナ施設、音楽、番組、思想・哲学テーマ」は絶対に重複・再使用しないでください：
 {past_context}
 
 【最重要執筆ルール】
-1. **出力前セルフチェック**: あなたは出力を行う前に、以下の全14セクションがすべて揃っているかを内部で厳密に確認してください。1つでも欠落させることは固く禁じます。
-2. **お笑い各ネタの個別リンク**: 02章のネタ3選は、それぞれの紹介文の直後に必ずYouTube検索リンクを設置してください。
-3. **カフェ情報の詳細とマップリンク**: 06章のカフェ案内では、流山おおたかの森、目白、都内の実在カフェを具体的に挙げ、雰囲気やおすすめメニューに加え、Googleマップリンクを配置してください。
-4. **本文冒頭のメタデータ禁止**: 「title:」「date:」などの文字列は出力せず、いきなり「01. 調律とセルフ・コンパッション」から書き始めること。
-5. **上品でやさしい言葉遣い**: 育児や家事の合間にほっと心がほどける、温かく洗練されたエッセイ調で執筆すること。
+1. **出力前セルフチェック**: あなたは出力を行う前に、以下の全14セクションがすべて揃っており、上記の過去90日間の記録と一切被りがないかを内部で厳密に確認してください。
+2. **お笑いネタの多様化と個別リンク**: 特定の芸人に固執せず、ベテラン・中堅・若手賞レース注目株、劇場で話題のコント師、大学お笑い出身など幅広くリサーチし、過去90日間に登場していない癒やしの名作ネタを3組紹介してください。各ネタの直後に必ず専用の個別YouTubeリンクを設置すること。
+3. **カフェ案内の広域化**: おおたかの森駅周辺が尽きそうになったら、**近隣の柏の葉キャンパス、柏、松戸、野田、TX沿線、目白（豊島区）、都内各所（清澄白河、蔵前、代々木上原、神保町等）**まで広げ、過去90日間で一度も紹介されていない実在の居心地の良いカフェ・ロースタリー・喫茶店を日替わりで紹介し、Googleマップリンクを配置してください。
+4. **育児情報の広域化**: 睡眠やスキンケアの固定化を避け、月齢に応じた遊び、離乳食の素材選び、知育・絵本の選び方、海外（北欧等）の育児思想など、周辺知識へ幅広く広げ、過去90日間のトピックと重複させないでください。
+5. **こころの調律の深化**: 決まり文句（脱フュージョン・減算法など）に頼らず、心理学（セルフ・コンパッション、ポジティブ心理学等）、西洋哲学（ストア派、エピクロス、モンテーニュ等）、仏教（禅、中道、放下着等）、東洋思想（知足、中庸等）から日替わりで異なる思想を選び、育児や暮らしに寄り添う温かい心の持ち方を語りかけてください。
+6. **本文冒頭のメタデータ禁止**: 「title:」「date:」などの文字列は出力せず、いきなり「01. 調律とセルフ・コンパッション」から書き始めること。
 
 見出し構成（全14セクション完全網羅）：
 ---
 <h2 id="minimal">01. 調律とセルフ・コンパッション: こころと暮らしの心理的安全性</h2>
-認知的脱フュージョンに加え、セルフ・コンパッションと心理的安全性を深める温かいエッセイ。自分への無条件の味方意識と減算法。
+過去90日間で取り上げていない心理学や東洋・西洋哲学（禅、ストア派、セルフ・コンパッション、老荘思想、アドラー等）から1つを選び、母親としての肩の荷をふっと下ろし、自分自身への絶対的な味方意識を育む温かいエッセイ。
 
 <h2 id="laugh">02. Laugh & Smile: おすすめ芸人ネタ紹介（厳選3選）</h2>
-家事や育児の合間に、何も考えずに笑えてホッと癒やされる名作ネタを3本厳選紹介（男性ブランコ、かが屋、令和ロマン等）。
+ベテランから気鋭若手まで、日常の合間にクスッと笑えて癒やされる名作ネタを3本厳選（過去90日間と重複禁止）。
 各ネタの解説文の直後に、それぞれ個別のYouTubeリンクを配置すること：
-- **ネタ1の紹介と解説**
+- **ネタ1の紹介と見どころ解説**
   - [▶ YouTubeで「芸人名 ネタ名」を見る](https://www.youtube.com/results?search_query=芸人名+ネタ名)
-- **ネタ2の紹介と解説**
+- **ネタ2の紹介と見どころ解説**
   - [▶ YouTubeで「芸人名 ネタ名」を見る](https://www.youtube.com/results?search_query=芸人名+ネタ名)
-- **ネタ3の紹介と解説**
+- **ネタ3の紹介と見どころ解説**
   - [▶ YouTubeで「芸人名 ネタ名」を見る](https://www.youtube.com/results?search_query=芸人名+ネタ名)
 
 <h2 id="comedy-history">03. Comedy Chronicle: 平成〜令和のお笑い史 ＆ 賞レース解体新書</h2>
-ピース（又吉直樹・綾部祐二の文学と野心）、チュートリアル、笑い飯、フットボールアワー、NON STYLE、千鳥、オードリーなど、2000年代〜2010年代の黄金期を中心に、M-1グランプリやキングオブコント等の名勝負・名ネタの背景にあるドラマや熱い系譜を情緒豊かに解説。
+平成〜令和の黄金期を彩ったコンビ・トリオや、M-1、KOC等の賞レースの名勝負・名ネタの背景にある人間ドラマと熱い系譜を情緒豊かに解説（過去90日間と被らない対象）。
 
 <h2 id="baby">04. Baby & Parenting: 知っておきたい赤ちゃん情報（厳選3選）</h2>
-忙しい日々の負担を減らし、赤ちゃんと心地よく過ごすための最新エビデンスを3点具体的に解説：
-1. **秋〜冬のスキンケア**: 水分補給＋ワセリンの蓋
-2. **快眠の最適解**: 室温20〜22℃＋スリーパー
-3. **お出かけを身軽にするグッズ**: 液体ミルク＆専用アタッチメントなど
+睡眠、スキンケア、感覚遊び、離乳食、小児科学の最新知見など、多角的な周辺情報から過去90日間と被らない3点解説。
 
 <h2 id="baby-travel">05. Baby Travel: 赤ちゃんと行けるオススメの旅行先</h2>
-赤ちゃんと無理なく楽しめる、都内・関東近郊（箱根、熱海、那須、軽井沢、房総等）の実在する旅行先・宿を1カ所セレクト：
-- ウェルカムベビー認定の宿、お部屋食や貸切風呂の有無
-- 調乳ポットやおむつ用ゴミ箱などの備え付けサポート
-- ベビーカーで気持ちよくお散歩できる周辺の自然やカフェ環境
+都内・関東近郊（箱根、伊香保、那須、軽井沢、房総等）の実在するウェルカムベビーなお宿や自然豊かなスポットを1カ所セレクト（過去90日間と被らないこと）。
 
 <h2 id="cafe">06. Cafe & Relax: おおたかの森・目白・東京の心地よいカフェ案内</h2>
-**流山おおたかの森、目白（豊島区）、東京周辺**から、実在する居心地抜群のカフェを日替わりで1〜2軒紹介：
-- お店の空気感（自然光の入り方、インテリアの美しさ、緑の借景、テラス席の心地よさ）
-- ベビーカーでの入店しやすさや、ゆったり過ごせる席の間隔
-- おすすめのドリンク（丁寧に淹れたドリップ珈琲、カフェインレスラテ、ハーブティー）とスイーツ（スコーン、キャロットケーキ、プリンなど）
+**流山おおたかの森、柏、松戸、目白、都内（清澄白河、蔵前、代々木上原等）**から、過去90日間で未紹介の実在する居心地抜群のカフェ・ロースタリーを1〜2軒紹介。
+- お店の空気感、ベビーカーでの入りやすさ、おすすめのドリンク・スイーツ。
 - [☕ Googleマップで「店名」の場所を見る](https://www.google.com/maps/search/?api=1&query=店名+カフェ)
 
 <h2 id="uniqlo">07. Wardrobe Pick: 今季ユニクロのイチ推しアイテム＆着こなし</h2>
-育児中の「動きやすさ」「抱っこ紐との相性」「自宅でガシガシ洗えること」を両立した、今季ユニクロの優秀アイテム（タックワイドパンツ等）を1点厳選ピックアップし、上品に見える着こなしのコツを解説。
+動きやすさと上品さを両立した今季の優秀アイテム1点と着こなしのコツ。
 
 <h2 id="sauna-spa">08. Serene Sauna & Spa: 心をほどく極上サウナ＆温冷浴</h2>
-女性が心地よくリフレッシュできる実在の上質サウナ・スパ施設を日替わりで1館フィーチャー：
-- 清潔感、アメニティの充実度（ドライヤー、オーガニックコスメ等）
-- サウナ室の温度・湿度（アロマスチーム、塩サウナ、セルフロウリュなど）
-- 水風呂の水温と肌あたり（冷たすぎず心地よいバイブラや天然水）
-- 静かに深く休めるリクライニングや外気浴テラス
+女性が安心して寛げる実在の温浴・スパ施設（過去90日間と重複禁止）。
 - [🧖 サウナイキタイで詳細を見る](https://sauna-ikitai.com/)
 
 <h2 id="chill-hiphop">09. Chill & Hip-Hop: 暮らしに寄り添うヒップホップ名曲</h2>
-育児やお部屋時間のBGMに心地よい、メロウで温かいヒップホップ／ネオソウル楽曲を1曲厳選（Nujabes、Lauryn Hill、Chance the Rapper、Tom Misch、Awichのメロウ曲等）。心をやさしく揺らすトラックの魅力と聴きどころ。
+お部屋やカフェタイムのBGMに心地よい、メロウで温かいヒップホップ／ネオソウル楽曲を1曲（過去90日間と重複禁止）。
 - [🎵 YouTube Musicで聴く](https://music.youtube.com/)
 
 <h2 id="stream">10. Relaxing Stream: 今観たい、おすすめの番組・配信</h2>
-赤ちゃんが寝静まったあとや授乳の合間に、頭を空っぽにしてクスッと笑えたり心が癒やされたりする作品（Netflix、Amazonプライム、バラエティ番組、深夜ラジオ番組など）を1本紹介。
+授乳や寝かしつけの合間に頭を空っぽにして笑える・癒やされる配信番組やラジオ番組を1本紹介（過去90日間と被らないこと）。
 
 <h2 id="otaka">11. おおたかの森とグリーン: 季節の風と散歩道</h2>
-流山おおたかの森周辺の緑や散歩道、観葉植物・ボタニカルのある暮らし、季節の移ろいを感じるエッセイ。
+流山おおたかの森周辺の緑や散歩道、観葉植物・ボタニカルのある暮らしのエッセイ。
 
 <h2 id="book">12. 本とことばの処方箋: 静かな夜に開く1冊</h2>
-心がじんわり温まる小説やエッセイを1冊セレクト。静かな夜に開きたくなる理由。
+心がじんわり温まる小説やエッセイを1冊セレクト（過去90日間と重複禁止）。
 
 <h2 id="refresh">13. Daily Refresh: ほっと一息のティータイム</h2>
-ノンカフェインのお茶（ルイボスバニラ等）や、お取り寄せ焼き菓子の小話。深呼吸の提案。
+ノンカフェインのお茶や、お取り寄せ焼き菓子の小話。
 
 <h2 id="colophon">14. Editor's Colophon: 今日のひとこと</h2>
 今日を健やかに過ごすための優しい結びの言葉。
@@ -134,7 +155,7 @@ user_prompt = f"""
 {img_tag_2}
 
 【事前確認指示】
-全14セクションが揃っていることを完全に確認してから、すべて丁寧に出力してください。Markdown形式で出力してください。
+全14セクションが揃っており、過去90日間のトピックと重複が一切ないことを点検してから出力してください。Markdown形式で出力してください。
 """
 
 response_text = None
@@ -145,7 +166,7 @@ if client:
         res = client.models.generate_content(
             model="gemini-3.8-flash",
             contents=user_prompt,
-            config=dict(system_instruction=SYSTEM_INSTRUCTION, temperature=0.7),
+            config=dict(system_instruction=SYSTEM_INSTRUCTION, temperature=0.75),
         )
         if res and res.text and len(res.text) > 1400:
             print("✅ 成功: Gemini APIでフルボリューム記事が完成しました！")
@@ -175,34 +196,16 @@ if not response_text or len(response_text) < 800:
 
 clean_text = re.sub(r'^(title:.*?\n|date:.*?\n|temp:.*?\n|sunset:.*?\n)+', '', response_text.strip(), flags=re.MULTILINE | re.IGNORECASE).strip()
 
-# 4. 【新設計】奥様マガジン用「日替わり動的プロンプト」生成
+# 4. 本日の記事内容に連動した写真生成
 os.makedirs("public/images", exist_ok=True)
-
-cafe_scenes = [
-    "A bright quiet corner table in a stylish Tokyo cafe with a slice of carrot cake on vintage ceramic plate, soft natural morning sunlight, 35mm film photography, Kinfolk aesthetic",
-    "A cozy wooden table in a cafe with a warm matcha latte art cup and open notebook, green garden view through glass window, gentle analog photography",
-    "Spacious scandinavian cafe interior with high ceiling, exposed concrete and natural oak furniture, lush potted plants, serene morning atmosphere",
-    "Close-up of a fresh baked scone with clotted cream and strawberry jam on linen napkin beside a glass teapot, warm documentary style",
-    "A sunny outdoor terrace cafe table shaded by green trees, delicate porcelain coffee cup, peaceful European-style street view, soft film grain"
-]
-
-life_spa_scenes = [
-    "A tranquil herbal steam sauna room with aromatic herbs hanging from cedar walls, gentle diffuse mist, serene spa photography, Kinfolk style",
-    "A natural stone outdoor hot spring bath surrounded by Autumn foliage, soft steam rising in crisp morning air, relaxing luxury ryokan aesthetic",
-    "A calm living room nursery nook with soft cream linen blanket, natural rattan baby basket, warm diffuse morning sun, gentle parenting lifestyle",
-    "Glass vase with blooming eucalyptus and white flowers on a light wood sideboard, soft morning shadows, minimal interior styling",
-    "A cozy reading chair beside a bookshelf, warm woven throw blanket, cup of steaming chamomile tea on side table, evening golden hour glow"
-]
-
-day_seed = now_jst.timetuple().tm_yday
-prompt_1 = cafe_scenes[day_seed % len(cafe_scenes)]
-prompt_2 = life_spa_scenes[(day_seed + 2) % len(life_spa_scenes)]
+prompt_1 = "Authentic candid 35mm film photograph of a bright stylish cafe corner with a ceramic cup of latte, green plant on natural wood table, soft morning sun, simple living magazine style"
+prompt_2 = "Gentle lifestyle 35mm film photograph of a cozy natural spa and warm herbal sauna atmosphere with cedar wood, relaxing ambiance, quiet peaceful feeling"
 
 if client:
     try:
         photo_gen_prompt = f"""
 以下の記事本文を読み、この号にふさわしい、雑誌『&Premium』『クウネル』風の美しく優しい35mmフィルム写真のプロンプト（英語・1文・高品質指示）を2つ考案してください。
-1つ目は本日紹介されたカフェや美味しいスイーツ・珈琲、2つ目は上質なサウナ・スパ、植物、赤ちゃんとの穏やかな暮らしのシーンにしてください。
+1つ目は本日紹介されたカフェやスイーツ、2つ目は上質なサウナ・スパ、植物、赤ちゃんとのお部屋時間をテーマにしてください。
 出力形式：
 PROMPT1: <英語プロンプト>
 PROMPT2: <英語プロンプト>
@@ -223,7 +226,7 @@ PROMPT2: <英語プロンプト>
                 prompt_2 = m2.group(1).strip() + ", authentic 35mm film photography, gentle warm atmosphere, quiet simple living"
             print("✅ 記事連動型オリジナル画像プロンプトの生成に成功！")
     except Exception as e:
-        print(f"動的プロンプト生成スキップ（日替わりプールを使用）: {e}")
+        print(f"動的プロンプト生成スキップ: {e}")
 
 scenes = [
     (prompt_1, f"public/images/{today}_scene1.jpg"),
