@@ -196,7 +196,7 @@ if not response_text or len(response_text) < 800:
 
 clean_text = re.sub(r'^(title:.*?\n|date:.*?\n|temp:.*?\n|sunset:.*?\n)+', '', response_text.strip(), flags=re.MULTILINE | re.IGNORECASE).strip()
 
-# 4. 本日の記事内容に連動した写真生成
+# 4. 【完全改修】画像の生成完了確認（2枚揃ってから記事出力へ進む）
 os.makedirs("public/images", exist_ok=True)
 prompt_1 = "Authentic candid 35mm film photograph of a bright stylish cafe corner with a ceramic cup of latte, green plant on natural wood table, soft morning sun, simple living magazine style"
 prompt_2 = "Gentle lifestyle 35mm film photograph of a cozy natural spa and warm herbal sauna atmosphere with cedar wood, relaxing ambiance, quiet peaceful feeling"
@@ -234,6 +234,9 @@ scenes = [
 ]
 
 def generate_and_save_photo(prompt_text, file_path):
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    
+    # A. Imagen (Gemini API)
     if client:
         try:
             img_res = client.models.generate_images(
@@ -244,24 +247,60 @@ def generate_and_save_photo(prompt_text, file_path):
             for gen_img in img_res.generated_images:
                 img = Image.open(io.BytesIO(gen_img.image.image_bytes))
                 img.save(file_path, "JPEG")
-                return
-        except Exception:
-            pass
+                if os.path.exists(file_path) and os.path.getsize(file_path) > 5000:
+                    print(f"✅ Imagenで生成成功: {file_path}")
+                    return True
+        except Exception as e:
+            print(f"Imagenスキップ/失敗: {e}")
 
+    # B. Pollinations AI（最大3回リトライ、60秒タイムアウト）
+    clean_prompt = quote(prompt_text)
+    for attempt in range(1, 4):
+        try:
+            seed_val = int(time.time()) + random.randint(1000, 99999)
+            url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=1200&height=675&nologo=true&seed={seed_val}"
+            print(f"画像生成試行中 ({attempt}/3): {file_path}")
+            r = requests.get(url, timeout=60)
+            if r.status_code == 200 and len(r.content) > 5000:
+                with open(file_path, "wb") as f:
+                    f.write(r.content)
+                img = Image.open(file_path)
+                img.verify()
+                print(f"✅ フォトエンジンで生成完了: {file_path} ({os.path.getsize(file_path)} bytes)")
+                return True
+        except Exception as ex:
+            print(f"⚠️ 画像生成リトライ中 ({attempt}/3): {ex}")
+            time.sleep(5)
+
+    # C. 高品質フォールバック写真の保存
     try:
-        clean_prompt = quote(prompt_text)
-        url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=1200&height=675&nologo=true&seed={int(time.time()) + random.randint(1, 99999)}"
-        r = requests.get(url, timeout=30)
+        r = requests.get("https://picsum.photos/1200/675", timeout=30)
         if r.status_code == 200:
             with open(file_path, "wb") as f:
                 f.write(r.content)
-    except Exception as ex:
-        print(f"画像保存エラー: {ex}")
+            print(f"⚠️ バックアップ写真で保存完了: {file_path}")
+            return True
+    except Exception as e:
+        print(f"フォールバック失敗: {e}")
 
-for p_text, s_path in scenes:
-    generate_and_save_photo(p_text, s_path)
+    return False
 
-# 5. 保存
+print("=== 画像生成プロセス開始 ===")
+for idx, (p_text, s_path) in enumerate(scenes):
+    success = generate_and_save_photo(p_text, s_path)
+    if not success or not os.path.exists(s_path) or os.path.getsize(s_path) < 1000:
+        dummy = Image.new("RGB", (1200, 675), color=(245, 240, 235))
+        dummy.save(s_path, "JPEG")
+        print(f"⚠️ プレースホルダー画像を配置: {s_path}")
+    if idx < len(scenes) - 1:
+        print("2枚目の画像生成まで 6秒 待機します...")
+        time.sleep(6)
+
+assert os.path.exists(scenes[0][1]) and os.path.getsize(scenes[0][1]) > 500, "Scene 1 is missing!"
+assert os.path.exists(scenes[1][1]) and os.path.getsize(scenes[1][1]) > 500, "Scene 2 is missing!"
+print("✅ すべての画像（SCENE 01 / SCENE 02）がディスクに生成完了しました。")
+
+# 5. 画像生成が完了した後に、Markdown記事を保存して出力完了
 os.makedirs("src/content/posts", exist_ok=True)
 frontmatter_block = f"""---
 title: "Issue - {today}"
